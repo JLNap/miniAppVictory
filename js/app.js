@@ -25,9 +25,13 @@
   const $$ = (sel, el = document) => el.querySelectorAll(sel);
 
   let supabase = null;
-  const config = window.SUPABASE_CONFIG || {};
-  if (config.url && config.anonKey) {
-    supabase = window.supabase?.createClient(config.url, config.anonKey);
+  try {
+    const config = window.SUPABASE_CONFIG || {};
+    if (config.url && config.anonKey && window.supabase) {
+      supabase = window.supabase.createClient(config.url, config.anonKey);
+    }
+  } catch (e) {
+    console.warn('Supabase init failed', e);
   }
 
   function showScreen(id) {
@@ -90,7 +94,7 @@
 
   async function createRoom(categoryKey) {
     if (!supabase) {
-      alert('Чтобы создавать комнаты, настрой Supabase: добавь URL и anon key в js/supabase-config.js и задеплой заново. Инструкция в README.');
+      alert('Комнаты не подключены. Проверь: 1) В js/supabase-config.js указаны SUPABASE_URL и SUPABASE_ANON_KEY. 2) Сделай push и дождись деплоя на Vercel. 3) Закрой Mini App в Telegram и открой заново (чтобы подгрузился новый скрипт).');
       return;
     }
     const code = generateCode();
@@ -117,7 +121,7 @@
 
   async function joinRoom() {
     if (!supabase) {
-      alert('Чтобы заходить в комнаты, настрой Supabase: добавь URL и anon key в js/supabase-config.js и задеплой заново. Инструкция в README.');
+      alert('Комнаты не подключены. Проверь: 1) В js/supabase-config.js указаны SUPABASE_URL и SUPABASE_ANON_KEY. 2) Сделай push и дождись деплоя на Vercel. 3) Закрой Mini App в Telegram и открой заново.');
       return;
     }
     const input = $('#roomCodeInput');
