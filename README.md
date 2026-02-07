@@ -52,7 +52,7 @@
 ## Деплой на Vercel
 
 1. **Залить код на GitHub**
-   - Зайди на [github.com](https://github.com) → **New repository** (например, `telegram-quiz-miniapp`).
+   - Репозиторий: [github.com/JLNap/miniAppVictory](https://github.com/JLNap/miniAppVictory).
    - В папке проекта в терминале:
    ```bash
    cd /Users/jlnap/myProjects/telegram-quiz-miniapp
@@ -60,21 +60,20 @@
    git add .
    git commit -m "Initial commit"
    git branch -M main
-   git remote add origin https://github.com/ТВОЙ_ЛОГИН/telegram-quiz-miniapp.git
+   git remote add origin https://github.com/JLNap/miniAppVictory.git
    git push -u origin main
    ```
-   (подставь свой логин и название репозитория)
 
 2. **Подключить репозиторий к Vercel**
    - Зайди на [vercel.com](https://vercel.com) и войди в аккаунт.
    - **Add New…** → **Project**.
    - **Import** репозитория с GitHub (если нужно — дай Vercel доступ к GitHub).
-   - Выбери репозиторий `telegram-quiz-miniapp` → **Import**.
+   - Выбери репозиторий `miniAppVictory` → **Import**.
    - **Build Command** и **Output Directory** оставь как есть (проект статический, билд не нужен).
    - Нажми **Deploy**.
 
 3. **Готово**
-   - Через минуту появится ссылка вида `https://telegram-quiz-miniapp-xxx.vercel.app`.
+   - Через минуту появится ссылка вида `https://mini-app-victory-xxx.vercel.app`.
    - Эту ссылку укажи в BotFather как URL Mini App.
 
 После деплоя подставь полученный HTTPS-URL в настройки Mini App в BotFather.
