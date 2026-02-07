@@ -57,13 +57,6 @@
       container.appendChild(card);
     });
 
-    const tabRooms = $('#tabRooms');
-    const contentRooms = $('#contentRooms');
-    if (!supabase && tabRooms) {
-      tabRooms.style.display = 'none';
-      contentRooms?.classList.remove('active');
-      $('#contentSolo')?.classList.add('active');
-    }
   }
 
   function setupHomeTabs() {
@@ -96,7 +89,10 @@
   }
 
   async function createRoom(categoryKey) {
-    if (!supabase) return;
+    if (!supabase) {
+      alert('Чтобы создавать комнаты, настрой Supabase: добавь URL и anon key в js/supabase-config.js и задеплой заново. Инструкция в README.');
+      return;
+    }
     const code = generateCode();
     const { data: room, error: roomErr } = await supabase
       .from('rooms')
@@ -120,7 +116,10 @@
   }
 
   async function joinRoom() {
-    if (!supabase) return;
+    if (!supabase) {
+      alert('Чтобы заходить в комнаты, настрой Supabase: добавь URL и anon key в js/supabase-config.js и задеплой заново. Инструкция в README.');
+      return;
+    }
     const input = $('#roomCodeInput');
     const code = (input?.value || '').trim().toUpperCase();
     if (code.length < 4) {
