@@ -14,21 +14,72 @@
     <section id="home" class="screen active">
       <div class="header">
         <h1>🎯 Викторина</h1>
-        <p class="subtitle">Выбери категорию и проверь свои знания</p>
+        <p class="subtitle">Сыграй один или с друзьями</p>
       </div>
-      <div class="categories" id="categories"></div>
+      <div class="home-tabs">
+        <button type="button" class="tab-btn active" data-tab="solo">Один</button>
+        <button type="button" class="tab-btn" data-tab="rooms" id="tabRooms">С друзьями</button>
+      </div>
+      <div class="tab-content tab-solo active" id="contentSolo">
+        <div class="categories" id="categories"></div>
+      </div>
+      <div class="tab-content tab-rooms" id="contentRooms">
+        <p class="tab-hint">Создай комнату и пригласи друзей по коду</p>
+        <button type="button" class="btn btn-create-room" id="createRoomBtn">➕ Создать комнату</button>
+        <div class="join-room">
+          <input type="text" class="join-input" id="roomCodeInput" placeholder="Код комнаты" maxlength="6" autocomplete="off">
+          <button type="button" class="btn btn-join" id="joinRoomBtn">Войти</button>
+        </div>
+      </div>
       <div class="footer">
         <p class="hint">Результаты сохраняются в Telegram</p>
       </div>
     </section>
 
-    <!-- Экран викторины -->
+    <!-- Выбор категории для комнаты -->
+    <section id="pick-room-category" class="screen">
+      <div class="lobby-header">
+        <button type="button" class="back-btn" id="pickCategoryBackBtn">←</button>
+        <h2>Категория для комнаты</h2>
+      </div>
+      <div class="categories" id="roomCategories"></div>
+    </section>
+
+    <!-- Лобби комнаты -->
+    <section id="lobby" class="screen">
+      <div class="lobby-header">
+        <button type="button" class="back-btn" id="lobbyBackBtn">←</button>
+        <h2>Комната</h2>
+      </div>
+      <div class="room-code-block">
+        <span class="room-code-label">Код для друзей</span>
+        <span class="room-code" id="roomCodeDisplay">------</span>
+        <button type="button" class="btn-copy" id="copyCodeBtn">Копировать</button>
+      </div>
+      <div class="lobby-category" id="lobbyCategory"></div>
+      <div class="players-block">
+        <h3>Участники (<span id="playersCount">0</span>)</h3>
+        <ul class="players-list" id="playersList"></ul>
+      </div>
+      <div class="chat-block">
+        <h3>Чат</h3>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Сообщение..." maxlength="200" autocomplete="off">
+          <button type="button" class="btn-send" id="chatSendBtn">Отпр.</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary btn-start" id="startGameBtn">Начать игру</button>
+    </section>
+
+    <!-- Экран викторины (одиночный и мультиплеер) -->
     <section id="quiz" class="screen">
       <div class="quiz-header">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
         <p class="question-counter" id="questionCounter">Вопрос 1 из 10</p>
+        <p class="multiplayer-status" id="multiplayerStatus"></p>
       </div>
       <div class="question-block">
         <h2 class="question-text" id="questionText"></h2>
@@ -37,7 +88,7 @@
       <button type="button" class="btn btn-next" id="nextBtn" disabled>Далее</button>
     </section>
 
-    <!-- Результаты -->
+    <!-- Результаты (одиночная игра) -->
     <section id="results" class="screen">
       <div class="results-content">
         <div class="result-emoji" id="resultEmoji">🏆</div>
@@ -48,8 +99,19 @@
         <button type="button" class="btn btn-secondary" id="backToMenuBtn">В меню</button>
       </div>
     </section>
+
+    <!-- Результаты комнаты (таблица лидеров) -->
+    <section id="room-results" class="screen">
+      <div class="results-content">
+        <h2>🏆 Итоги</h2>
+        <ol class="leaderboard" id="leaderboard"></ol>
+        <button type="button" class="btn btn-secondary" id="roomResultsBackBtn">В меню</button>
+      </div>
+    </section>
   </div>
 
+  <script src="js/supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   <script src="js/quiz-data.js"></script>
   <script src="js/app.js"></script>
 </body>
