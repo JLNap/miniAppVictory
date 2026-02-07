@@ -24,15 +24,18 @@
   const $ = (sel, el = document) => el.querySelector(sel);
   const $$ = (sel, el = document) => el.querySelectorAll(sel);
 
-  let supabase = null;
-  try {
-    const config = window.SUPABASE_CONFIG || {};
-    if (config.url && config.anonKey && window.supabase) {
-      supabase = window.supabase.createClient(config.url, config.anonKey);
+  let supabase = window.__SUPABASE_FETCH__ || null;
+  if (!supabase) {
+    try {
+      const config = window.SUPABASE_CONFIG || {};
+      if (config.url && config.anonKey && window.supabase) {
+        supabase = window.supabase.createClient(config.url, config.anonKey);
+      }
+    } catch (e) {
+      console.warn('Supabase init failed', e);
     }
-  } catch (e) {
-    console.warn('Supabase init failed', e);
   }
+  const usePolling = supabase && supabase._usePolling;
 
   function showScreen(id) {
     $$('.screen').forEach(s => s.classList.remove('active'));
@@ -207,10 +210,11 @@
     loadPlayers();
     loadMessages();
 
-    const roomChannel = supabase.channel('room-' + roomId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: 'id=eq.' + roomId }, (payload) => {
-        const r = payload.new;
-        if (r.status === 'playing') {
+    if (usePolling) {
+      const lobbyPoll = setInterval(async () => {
+        const { data: r } = await supabase.from('rooms').select('status').eq('id', roomId).single().then(x => x).catch(() => ({}));
+        if (r && r.status === 'playing') {
+          clearInterval(lobbyPoll);
           unsubscribeLobby();
           state.currentIndex = 0;
           state.score = 0;
@@ -218,24 +222,44 @@
           startMultiplayerQuiz();
           return;
         }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, () => loadPlayers())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: 'room_id=eq.' + roomId }, ({ new: m }) => {
-        const box = $('#chatMessages');
-        if (box) {
-          const div = document.createElement('div');
-          div.className = 'chat-message';
-          div.innerHTML = `<span class="author">${escapeHtml(m.username || 'Игрок')}:</span>${escapeHtml(m.message)}`;
-          box.appendChild(div);
-          box.scrollTop = box.scrollHeight;
-        }
-      })
-      .subscribe();
-    lobbySubscriptions.push(roomChannel);
+        loadPlayers();
+        loadMessages();
+      }, 2000);
+      lobbySubscriptions.push({ _poll: lobbyPoll });
+    } else {
+      const roomChannel = supabase.channel('room-' + roomId)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: 'id=eq.' + roomId }, (payload) => {
+          const r = payload.new;
+          if (r.status === 'playing') {
+            unsubscribeLobby();
+            state.currentIndex = 0;
+            state.score = 0;
+            showScreen('quiz');
+            startMultiplayerQuiz();
+            return;
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'room_players', filter: 'room_id=eq.' + roomId }, () => loadPlayers())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_messages', filter: 'room_id=eq.' + roomId }, ({ new: m }) => {
+          const box = $('#chatMessages');
+          if (box) {
+            const div = document.createElement('div');
+            div.className = 'chat-message';
+            div.innerHTML = `<span class="author">${escapeHtml(m.username || 'Игрок')}:</span>${escapeHtml(m.message)}`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+          }
+        })
+        .subscribe();
+      lobbySubscriptions.push(roomChannel);
+    }
   }
 
   function unsubscribeLobby() {
-    lobbySubscriptions.forEach(ch => supabase?.removeChannel(ch));
+    lobbySubscriptions.forEach(ch => {
+      if (ch._poll) clearInterval(ch._poll);
+      else supabase?.removeChannel(ch);
+    });
     lobbySubscriptions = [];
   }
 
@@ -291,19 +315,35 @@
 
   function subscribeRoom() {
     if (!supabase || !state.roomId) return;
-    roomChannel = supabase.channel('quiz-' + state.roomId)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: 'id=eq.' + state.roomId }, (payload) => {
-        const r = payload.new;
-        state.currentIndex = r.current_question_index;
+    if (usePolling) {
+      roomChannel = { _poll: setInterval(async () => {
+        const { data: r } = await supabase.from('rooms').select('current_question_index, status').eq('id', state.roomId).single().then(x => x).catch(() => ({}));
+        if (!r) return;
+        state.currentIndex = r.current_question_index ?? state.currentIndex;
         if (r.status === 'finished') {
-          supabase?.removeChannel(roomChannel);
+          clearInterval(roomChannel._poll);
+          roomChannel = null;
           showScreen('room-results');
           renderLeaderboard();
           return;
         }
         renderQuestion();
-      })
-      .subscribe();
+      }, 1500) };
+    } else {
+      roomChannel = supabase.channel('quiz-' + state.roomId)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: 'id=eq.' + state.roomId }, (payload) => {
+          const r = payload.new;
+          state.currentIndex = r.current_question_index;
+          if (r.status === 'finished') {
+            supabase?.removeChannel(roomChannel);
+            showScreen('room-results');
+            renderLeaderboard();
+            return;
+          }
+          renderQuestion();
+        })
+        .subscribe();
+    }
   }
 
   async function advanceRoomQuestion() {
@@ -483,7 +523,10 @@
   }
 
   function backToMenu() {
-    if (roomChannel) supabase?.removeChannel(roomChannel);
+    if (roomChannel) {
+      if (roomChannel._poll) clearInterval(roomChannel._poll);
+      else supabase?.removeChannel(roomChannel);
+    }
     state.roomId = null;
     state.isMultiplayer = false;
     showScreen('home');
